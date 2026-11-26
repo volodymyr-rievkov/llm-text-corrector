@@ -1,0 +1,86 @@
+name: Python Tests & Coverage
+
+on:
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run unit tests
+        run: uv run pytest -m unit --cov --cov-report=
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: .coverage
+          include-hidden-files: true
+          retention-days: 1
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    env:
+      # 5433, not Postgres' default 5432: docker-compose.test.yaml maps postgres there to avoid
+      # colliding with a runner/host already using 5432.
+      DB_PORT: "5433"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Cache Docker images
+        uses: ScribeMD/docker-cache@0.5.0
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('docker-compose.test.yaml') }}
+
+      - name: Start services
+        run: docker compose -f docker-compose.test.yaml up -d --build --wait
+
+      - name: Run integration tests
+        run: uv run pytest -m integration --cov --cov-report=
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.test.yaml down -v
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: .coverage
+          include-hidden-files: true
+          retention-days: 1
+
+  coverage-check:
+    needs: [unit-tests, integration-tests]
+    uses: ./.github/workflows/tests-coverage-check.yaml
