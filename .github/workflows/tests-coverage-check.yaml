@@ -1,0 +1,58 @@
+name: Coverage
+on:
+  workflow_call:
+
+jobs:
+  tests-coverage:
+    runs-on: ubuntu-latest
+    env:
+      UNIT_THRESHOLD: 100
+      INTEGRATION_THRESHOLD: 95
+      COMBINED_THRESHOLD: 100
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install coverage
+        run: pip install "coverage[toml]"
+
+      - name: Download unit coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage-unit
+
+      - name: Download integration coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage-integration
+
+      - name: Unit coverage report & check
+        if: always()
+        run: |
+          echo "=== Unit Tests Coverage (threshold: ${UNIT_THRESHOLD}%) ==="
+          coverage report -m --data-file=coverage-unit/.coverage --fail-under=${UNIT_THRESHOLD}
+
+      - name: Integration coverage report & check
+        if: always()
+        run: |
+          echo "=== Integration Tests Coverage (threshold: ${INTEGRATION_THRESHOLD}%) ==="
+          coverage report -m --data-file=coverage-integration/.coverage --fail-under=${INTEGRATION_THRESHOLD}
+
+      - name: Combine coverage reports
+        if: always()
+        run: |
+          coverage combine coverage-unit/.coverage coverage-integration/.coverage
+
+      - name: Combined coverage report & check
+        if: always()
+        run: |
+          echo "=== Combined Coverage (threshold: ${COMBINED_THRESHOLD}%) ==="
+          coverage report -m --fail-under=${COMBINED_THRESHOLD}

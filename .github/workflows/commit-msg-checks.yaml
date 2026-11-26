@@ -1,0 +1,37 @@
+name: Commit message checks
+on:
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  commit-msg-checks:
+    name: commit-msg-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important to get full history
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check commit messages
+        run: |
+          base_ref=origin/${{ github.event.pull_request.base.ref }}
+          echo $base_ref
+          for c in $(git log --pretty=format:"%H" $base_ref..HEAD); do git show -s --format='%B' $c > $c.commit_msg ; done;
+          ls -ltr *.commit_msg
+          bash -ce 'for f in *.commit_msg ; do echo linting $f...;cat $f; uv run pre-commit run commitlint --hook-stage commit-msg --commit-msg-filename $f; done'

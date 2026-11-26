@@ -1,0 +1,40 @@
+name: Pre-commit checks
+on:
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pre-commit-checks:
+    name: pre-commit-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important to get full history
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run all pre-commit checks
+        run: |
+          # The SHA of the commit at the tip of the base branch (master) when the pull request was opened or last synchronized
+          base_branch_sha=${{ github.event.pull_request.base.sha }}
+          # The SHA of the commit at the tip of the head branch (the branch from which the PR was opened)
+          pr_branch_commit_sha=${{ github.event.pull_request.head.sha }}
+          uv run pre-commit run --from-ref=$base_branch_sha --to-ref=$pr_branch_commit_sha
