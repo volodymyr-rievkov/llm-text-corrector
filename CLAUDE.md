@@ -1,5 +1,17 @@
 # CLAUDE.md
 
+# Development workflow: always TDD
+- **Write the test first, for every code change** (feature, bug fix, refactor with a behavior change). Order:
+  1. **Red:** write the failing test(s) and run them. Confirm they fail for the right reason.
+  2. **Green:** write the smallest code that makes them pass.
+  3. **Refactor:** clean up with the tests green.
+- **A bug fix starts with a regression test** that reproduces the bug and fails before the fix.
+- **Never lose a test case.** Don't delete or weaken an existing test to make a change pass. If a requirement
+  changes, update the test and the spec in the same change, and say so.
+- **Cover every branch and edge case** of the change (empty, boundary, error and "other kind" inputs), not only
+  the happy path. Coverage thresholds in CI are a floor, not the goal.
+- In the final report, state which tests were added or changed, and that they were seen failing first.
+
 # Test conventions:
 - **Unit tests mirror the project structure.** `tests/unit/` has the same layout as the source tree: the tests
   for `src/<pkg>/<module>.py` live in `tests/unit/<pkg>/<module>_test.py`.
@@ -14,6 +26,25 @@
   `tests/unit/mocks.py` (`paginated`, `mock_jetstream`, `mock_nats_msg`, `mock_nats_client`) — unit-only;
   integration tests use the real services. `tests/shared/` holds only what both use: factories and constants.
 - **Fixtures live in the nearest `conftest.py`;** `*_test.py` files hold only tests.
+
+# Quality gates (every PR)
+
+Every PR must pass the pre-commit checks and the unit + integration tests, both locally before the PR is
+opened and on GitHub (CI) after.
+
+- **Before opening a PR (locally):** run `uv run pre-commit run --all-files`, then `uv run pytest -m unit` and
+  `uv run pytest -m integration`. Fix every failure first. Don't open the PR, or use `--no-verify`, while
+  anything is red.
+- **After opening the PR (GitHub):** check the workflow runs with `gh pr checks` (or `gh run list/view`). If a
+  check fails, fix it, push and re-check until all are green. Don't report the PR as ready while CI is red.
+- Coverage thresholds are enforced in CI; see `.github/workflows/` for the current values.
+
+# Plans and specs
+
+- **Plans** live in `plans/<feature-name>/PLAN.md`.
+- **Specs** live in `specs/<feature-name>/SPEC.md`.
+- `<feature-name>` is a short kebab-case name, the same for a feature's plan and spec.
+- Don't put plans or specs elsewhere (no loose `plan.md`/`spec.md`).
 
 # Python Environment & Package Management with uv
 
@@ -39,7 +70,7 @@ Use uv exclusively for all Python actions in this project.
 
 - Comments/docstrings: brief, ~3 lines max — orientation, not rationale. Never
   hardcode volatile specifics (table/schema names, PRD decision numbers,
-  config values) in them; point to the relevant `specs/*.md` instead.
+  config values) in them; point to the relevant `specs/<feature-name>/SPEC.md` instead.
   Those values change, and hunting down every comment that quoted them is
   wasted churn.
 - Names: prefer generic, role-based function/variable names over ones that encode

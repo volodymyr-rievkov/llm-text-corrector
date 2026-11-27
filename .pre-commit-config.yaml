@@ -19,6 +19,7 @@ repos:
     -   id: check-toml
     -   id: mixed-line-ending
     -   id: name-tests-test
+        exclude: ^tests/(shared/|unit/mocks\.py$)
 
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.22.0
