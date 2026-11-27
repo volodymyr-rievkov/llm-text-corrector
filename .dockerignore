@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.claude
+.tokensave
+.tokensave-hooks.yaml
+.env
+.env.*
+.coverage
+__pycache__
+*.pyc
+.mypy_cache
+.pytest_cache
+.ruff_cache
+tests
+plans
+specs
