@@ -38,6 +38,15 @@ opened and on GitHub (CI) after.
 - **After opening the PR (GitHub):** check the workflow runs with `gh pr checks` (or `gh run list/view`). If a
   check fails, fix it, push and re-check until all are green. Don't report the PR as ready while CI is red.
 - Coverage thresholds are enforced in CI; see `.github/workflows/` for the current values.
+- **After every push to a PR,** run `gh pr checks <number> --watch` until it finishes and report the result.
+  Never leave it at "checks pending", and never assume CI is green.
+- **Keep `.env.example` in sync with the settings.** Every `CORRECTOR_*` variable that a settings class reads
+  (`backend/config.py`, `frontend/config.py`, any new one) must appear in `.env.example` with its default and
+  a one-line note. Add, rename or remove it there in the same change as the setting, and update the matching
+  spec. Before opening a PR, compare the settings fields with `.env.example`.
+- **PR description:** build it from `.github/pull_request_template.md`. Keep every heading and checklist as
+  is (checkboxes unticked) and write the summary under "Technical implementation details". Don't write the
+  body from scratch.
 
 # Plans and specs
 

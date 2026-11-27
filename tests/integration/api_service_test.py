@@ -9,23 +9,10 @@ from werkzeug import Request, Response
 
 from llm_text_corrector.backend.api.app import create_api
 from llm_text_corrector.backend.config import Settings, get_settings
-from tests.integration.conftest import API_KEY, CHAT_PATH, MODEL, TIMEOUT_S, chat_body
-from tests.shared.factories.config import SettingsFactory
+from tests.integration.conftest import API_KEY, CHAT_PATH, MAX_CHARS, stub_reply
 
 URL = "/api/v1/corrections"
 KEY_HEADER = {"X-Groq-Api-Key": API_KEY}
-MAX_CHARS = 40
-
-
-@pytest.fixture
-def settings(stub_base_url: str) -> Settings:
-    return SettingsFactory.build(
-        groq_base_url=stub_base_url,
-        model=MODEL,
-        timeout_s=TIMEOUT_S,
-        max_input_chars=MAX_CHARS,
-        reasoning_effort="low",
-    )
 
 
 @pytest.fixture
@@ -34,10 +21,6 @@ def client(settings: Settings) -> Iterator[TestClient]:
     app.dependency_overrides[get_settings] = lambda: settings
     with TestClient(app) as test_client:  # `with` runs the lifespan that owns the httpx client
         yield test_client
-
-
-def stub_reply(httpserver: HTTPServer, content: str) -> None:
-    httpserver.expect_request(CHAT_PATH, method="POST").respond_with_json(chat_body(content))
 
 
 @pytest.mark.parametrize(
